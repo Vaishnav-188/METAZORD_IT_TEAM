@@ -137,10 +137,24 @@
       font-size: 0.9rem;
     }
 
+    /* ADDED BUMP ANIMATION HERE */
+    @keyframes subtleBump {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); } /* Scales up when clicked */
+      100% { transform: scale(1); }
+    }
+
     .register-text a {
       color: var(--primary-green);
       text-decoration: none;
       font-weight: 600;
+      display: inline-block; /* Required for transform */
+      /* No animation here, so it stays static */
+    }
+
+    /* Trigger animation ONLY when clicked (active state) */
+    .register-text a:active {
+      animation: subtleBump 0.3s ease;
     }
 
     /* MOBILE VIEW */
@@ -186,7 +200,7 @@
       </div>
 
       <p class="register-text">
-       <a href="#">Create Account/Register</a>
+       <a href="Register_form.html">Create Account/Register</a>
       </p>
     </form>
     
