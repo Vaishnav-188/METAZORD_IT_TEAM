@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Manager</title>
+    <style>
+        :root {
+            --bg: #FAF3E0;
+            --headerBg: #3E2723;
+            --cardBg: #FFFFFF;
+            --primary: #5D4037;
+            --accent: #FFB74D;
+            --green: #2E7D32;
+            --textMain: #3E2723;
+            --textLight: #8D6E63;
+            --border: #D7CCC8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--textMain);
+            min-height: 100vh;
+            /* Static background pattern */
+            background-image: radial-gradient(#D7CCC8 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        header {
+            background-color: var(--headerBg);
+            color: var(--accent);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .add-btn {
+            background-color: var(--accent);
+            color: var(--headerBg);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* =========================================
+           GRID & CARDS
+           ========================================= */
+        .grid-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            grid-column: 1 / -1;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .card {
+            background-color: var(--cardBg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(62, 39, 35, 0.05);
+            border-top: 6px solid var(--green);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: #aaa;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .delete-btn:hover {
+            color: #d32f2f;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            color: var(--primary);
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: var(--textLight);
+            margin-bottom: 1rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--bg);
+            padding-bottom: 0.5rem;
+        }
+
+        .stat-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .tips-btn {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.8rem;
+            background-color: var(--primary);
+            color: #FFF;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tips-btn:hover {
+            opacity: 0.9;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(62, 39, 35, 0.8);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #FFF;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--bg);
+            padding-bottom: 0.5rem;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            border: none;
+            background: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--textLight);
+        }
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 1rem;
+            background-color: #FAFAFA;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--green);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            background-color: #1B5E20;
+        }
+
+        /* Tip Styles */
+        .tip-box {
+            background-color: #E8F5E9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid var(--green);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .season-row {
+            margin-bottom: 0.5rem;
+        }
+        .season-label {
+            font-weight: bold;
+        }
+        .season-text {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">🌾 FarmManager</div>
+        <button class="add-btn" onclick="openAddModal()">
+            <span style="font-size:1.2rem">+</span> Add Crop
+        </button>
+    </header>
+
+    <!-- MAIN GRID CONTAINER -->
+    <div id="gridContainer" class="grid-container">
+        <!-- JS will populate cards here -->
+    </div>
+
+    <!-- ADD CROP MODAL -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            <h2 class="modal-header">Add New Crop</h2>
+            
+            <form id="addCropForm" onsubmit="handleAddCrop(event)">
+                <div class="form-group">
+                    <label>Crop Name *</label>
+                    <input type="text" id="cropName" placeholder="e.g. Cotton" required autofocus>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex:1">
+                        <label>Area (Acres) *</label>
+                        <input type="number" id="cropArea" step="0.1" placeholder="0.0" required>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Variety (Optional)</label>
+                        <input type="text" id="cropVariety" placeholder="Type...">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Planting Date</label>
+                    <input type="date" id="cropDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Irrigation System</label>
+                    <select id="cropSystem">
+                        <option value="Drip">Drip Irrigation</option>
+                        <option value="Sprinkler">Sprinkler Irrigation</option>
+                        <option value="Flood">Flood Irrigation</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="submit-btn">Save Crop</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TIPS MODAL -->
+    <div id="tipsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeTipsModal()">&times;</button>
+            <h2 class="modal-header" id="tipsHeader">Tips</h2>
+            
+            <h4 style="margin-bottom:0.5rem; color: var(--green);">💧 System Tips</h4>
+            <div id="systemTipContent" class="tip-box"></div>
+
+            <h4 style="margin-bottom:0.5rem; margin-top:1.5rem; color: var(--accent);">📅 Seasonal Advice</h4>
+            <div id="seasonalTipsContainer">
+                <!-- JS populates this -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ============================
+        // 1. DATA
+        // ============================
+        const TIPS_DATA = {
+            seasons: {
+                Summer: "Increase watering frequency, water early morning or late evening to reduce evaporation, use mulches to retain moisture.",
+                Winter: "Reduce frequency, avoid waterlogging, water at mid-day to prevent freeze stress.",
+                Monsoon: "Reduce irrigation, ensure drainage, avoid irrigating immediately before heavy rains."
+            },
+            systems: {
+                Drip: "Apply water directly to roots to minimize evaporation. Use filters and pressure regulators. Consider plastic mulch.",
+                Sprinkler: "Ensure head-to-head coverage. Don’t mix different sprinkler types in the same zone. Check pressure at farthest points.",
+                Flood: "Ensure land is leveled. Use furrows to control flow. Monitor soil moisture to prevent over-saturation."
+            }
+        };
+
+        const DEFAULT_CROPS = [
+            {
+                id: 'default-1',
+                name: 'Tomato',
+                variety: 'Hybrid',
+                date: '2023-10-15',
+                area: '2.5',
+                unit: 'acres',
+                system: 'Drip'
+            }
+        ];
+
+        let crops = [];
+
+        // ============================
+        // 2. INITIALIZATION
+        // ============================
+        window.onload = function() {
+            const saved = localStorage.getItem('myStaticFarmCrops');
+            if (saved) {
+                crops = JSON.parse(saved);
+            } else {
+                crops = DEFAULT_CROPS;
+            }
+            renderCrops();
+        };
+
+        function saveCrops() {
+            localStorage.setItem('myStaticFarmCrops', JSON.stringify(crops));
+            renderCrops();
+        }
+
+        // ============================
+        // 3. RENDERING
+        // ============================
+        function renderCrops() {
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = '';
+
+            if (crops.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No crops yet.</h2>
+                        <p>Click the button in the top-right to add your first crop.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            crops.forEach(crop => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <button class="delete-btn" onclick="deleteCrop('${crop.id}')" title="Remove Crop">&times;</button>
+                    
+                    <h3 class="card-title">${crop.name}</h3>
+                    <div class="card-subtitle">${crop.variety || 'Standard Variety'}</div>
+
+                    <div class="stat-row">
+                        <span>Area:</span>
+                        <strong>${crop.area} Acres</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Planted:</span>
+                        <strong>${crop.date}</strong>
+                    </div>
+                    <div class="stat-row" style="border-bottom:none">
+                        <span>System:</span>
+                        <strong style="color: var(--green)">${crop.system}</strong>
+                    </div>
+
+                    <button class="tips-btn" onclick="openTipsModal('${crop.id}')">View Irrigation Tips</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ============================
+        // 4. ACTIONS
+        // ============================
+        
+        // --- ADD CROP ---
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            // Set Default Date to Today
+            document.getElementById('cropDate').valueAsDate = new Date();
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+            document.getElementById('addCropForm').reset();
+        }
+
+        function handleAddCrop(e) {
+            e.preventDefault();
+            
+            const newCrop = {
+                id: Date.now().toString(),
+                name: document.getElementById('cropName').value,
+                area: document.getElementById('cropArea').value,
+                variety: document.getElementById('cropVariety').value,
+                date: document.getElementById('cropDate').value,
+                system: document.getElementById('cropSystem').value,
+                unit: 'acres'
+            };
+
+            crops.unshift(newCrop); // Add to beginning
+            saveCrops();
+            closeAddModal();
+        }
+
+        // --- DELETE CROP ---
+        function deleteCrop(id) {
+            if(confirm("Delete this crop?")) {
+                crops = crops.filter(c => c.id !== id);
+                saveCrops();
+            }
+        }
+
+        // --- TIPS MODAL ---
+        function openTipsModal(id) {
+            const crop = crops.find(c => c.id === id);
+            if(!crop) return;
+
+            document.getElementById('tipsHeader').innerText = `Tips for ${crop.name}`;
+            
+            // System Tip
+            const sysTip = TIPS_DATA.systems[crop.system] || "General maintenance recommended.";
+            const sysTipContainer = document.getElementById('systemTipContent');
+            sysTipContainer.innerText = sysTip;
+            sysTipContainer.innerHTML = `<strong>${crop.system}:</strong> ${sysTip}`;
+
+            // Seasonal Tips
+            const seasonalContainer = document.getElementById('seasonalTipsContainer');
+            seasonalContainer.innerHTML = '';
+            
+            for (const [season, tip] of Object.entries(TIPS_DATA.seasons)) {
+                const row = document.createElement('div');
+                row.className = 'season-row';
+                row.innerHTML = `<span class="season-label">${season}:</span> <span class="season-text">${tip}</span>`;
+                seasonalContainer.appendChild(row);
+            }
+
+            document.getElementById('tipsModal').classList.add('active');
+        }
+
+        function closeTipsModal() {
+            document.getElementById('tipsModal').classList.remove('active');
+        }
+
+        // Close modal if clicking outside content
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                event.target.classList.remove('active');
+            }
+        }
+
+    </script>
+</body>
+</html>
