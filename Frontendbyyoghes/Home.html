@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Support System</title>
+    
+    <!-- LOAD LIBRARIES -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { margin: 0; overflow-x: hidden; }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- THEME & STYLES ---
+        const theme = {
+            colors: {
+                bgDark: '#3E2723', bgLight: '#FAF3E0', primary: '#5D4037', accent: '#FFB74D',
+                green: '#2E7D32', textMain: '#3E2723', textLight: '#8D6E63', white: '#FFFFFF', glass: 'rgba(250, 243, 224, 0.95)',
+            }
+        };
+
+        const globalStyles = `
+            body { background-color: ${theme.colors.bgDark}; font-family: 'Segoe UI', sans-serif; color: ${theme.colors.textMain}; }
+            .hover-scale { transition: transform 0.2s ease; cursor: pointer; } 
+            .hover-scale:hover { transform: scale(1.02); }
+            @media (max-width: 768px) { 
+                .responsive-flex { flex-direction: column !important; } 
+                .hero-content { width: 100% !important; padding-top: 80px !important; } 
+                .three-container { position: relative !important; height: 300px !important; width: 100% !important; opacity: 0.8; } 
+                .nav-links { display: none; } 
+                .mobile-menu-btn { display: block !important; } 
+                .mobile-menu-open { display: flex !important; flex-direction: column; position: absolute; top: 70px; left: 0; width: 100%; background: ${theme.colors.glass}; padding: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); } 
+            }
+        `;
+
+        // --- ICONS ---
+        const Icon = ({ name, color = theme.colors.primary, size = 24 }) => {
+            const paths = {
+                disease: "M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z",
+                water: "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z",
+                price: "M12 1v2a9 9 0 0 1 0 18v2M12 5a9 9 0 0 1 0 14M7 10h10M7 14h10",
+                weather: "M19.36 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.64-4.96z",
+                account: "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+                menu: "M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
+            };
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg"><path d={paths[name]} /></svg>;
+        };
+
+        // --- THREE.JS SCENE ---
+        const ThreeScene = () => {
+            const mountRef = useRef(null);
+            useEffect(() => {
+                const mount = mountRef.current; if (!mount) return;
+                const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(theme.colors.bgDark, 0.04);
+                const camera = new THREE.PerspectiveCamera(45, mount.clientWidth / mount.clientHeight, 0.1, 100); camera.position.set(0, 2, 8);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); renderer.setSize(mount.clientWidth, mount.clientHeight); mount.appendChild(renderer.domElement);
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(theme.colors.accent, 1.5); dirLight.position.set(5, 10, 5); scene.add(dirLight);
+                
+                // Helper to create tree
+                const createLowPolyTree = (color) => {
+                    const group = new THREE.Group();
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1, 6), new THREE.MeshStandardMaterial({ color: '#5D4037' })); trunk.position.y = 0.5; group.add(trunk);
+                    const leaves = new THREE.Mesh(new THREE.DodecahedronGeometry(0.7, 0), new THREE.MeshStandardMaterial({ color: color, roughness: 0.8 })); leaves.position.y = 1.2; group.add(leaves);
+                    return group;
+                };
+                const islandGroup = new THREE.Group();
+                const ground = new THREE.Mesh(new THREE.CylinderGeometry(3, 2.5, 1, 7), new THREE.MeshStandardMaterial({ color: '#33691E', flatShading: true })); ground.position.y = -0.5; islandGroup.add(ground);
+                islandGroup.add(createLowPolyTree('#43A047').translateY(0).translateX(0));
+                
+                // Add secondary trees
+                const t2 = createLowPolyTree('#66BB6A'); t2.position.set(-1.2, 0, 1); islandGroup.add(t2);
+                const t3 = createLowPolyTree('#2E7D32'); t3.position.set(1.5, 0, -1); t3.scale.set(0.8, 0.8, 0.8); islandGroup.add(t3);
+                
+                scene.add(islandGroup);
+
+                const animate = () => {
+                    islandGroup.rotation.y += 0.005;
+                    islandGroup.position.y = Math.sin(Date.now() * 0.001) * 0.2 - 0.5;
+                    renderer.render(scene, camera); 
+                    requestAnimationFrame(animate);
+                };
+                animate();
+
+                window.addEventListener('resize', () => {
+                    camera.aspect = mount.clientWidth / mount.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(mount.clientWidth, mount.clientHeight);
+                });
+            }, []);
+            return <div ref={mountRef} className="three-container" style={{ width: '100%', height: '100%' }} />;
+        };
+
+        // --- NAVBAR ---
+        const Navbar = ({ onNavigate }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const navItems = [
+                { id: 'disease', label: 'Disease Control' },
+                { id: 'irrigation', label: 'Irrigation' },
+                { id: 'price', label: 'Price Prediction' },
+                { id: 'weather', label: 'Weather' },
+                { id: 'accounts', label: 'Accounts' }
+            ];
+            return (
+                <nav style={{ position: 'sticky', top: 0, zIndex: 1000, backgroundColor: theme.colors.bgDark, borderBottom: `2px solid ${theme.colors.accent}`, padding: '0.8rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+                    <div style={{ color: theme.colors.accent, fontWeight: '800', fontSize: '1.5rem', display:'flex', alignItems:'center', gap:'10px' }}><Icon name="water" color={theme.colors.accent} /> FarmerSupport</div>
+                    <button className="mobile-menu-btn" style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setIsOpen(!isOpen)}><Icon name="menu" color={theme.colors.white} size={28} /></button>
+                    <div className={`nav-links ${isOpen ? 'mobile-menu-open' : ''}`} style={{ display: 'flex', gap: '1.5rem' }}>
+                        {navItems.map(item => (
+                            <button 
+                                key={item.id} 
+                                onClick={() => onNavigate(item.id)} 
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.colors.white, fontSize: '1rem', padding: '0.5rem' }}
+                                onMouseOver={(e) => e.target.style.color = theme.colors.accent}
+                                onMouseOut={(e) => e.target.style.color = theme.colors.white}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+                </nav>
+            );
+        };
+
+        // --- FEATURE CARD ---
+        const FeatureCard = ({ title, desc, icon, onClick }) => (
+            <div onClick={onClick} className="hover-scale" style={{ backgroundColor: theme.colors.glass, backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '16px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: theme.colors.bgDark, padding: '10px', borderRadius: '50%' }}><Icon name={icon} color={theme.colors.accent} size={24} /></div>
+                <h3 style={{ color: theme.colors.primary, fontSize: '1.2rem', fontWeight: 'bold' }}>{title}</h3>
+                <p style={{ color: theme.colors.textMain, fontSize: '0.9rem', lineHeight: '1.4' }}>{desc}</p>
+                <span style={{ marginTop: 'auto', color: theme.colors.green, fontWeight: 'bold', fontSize: '0.85rem' }}>Open Tool &rarr;</span>
+            </div>
+        );
+
+        // --- MAIN APP ---
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('home');
+
+            const handleNavigation = (id) => {
+                if (id === 'irrigation') {
+                    // *** THIS IS THE IMPORTANT CHANGE ***
+                    // Navigates to your irrigationtips.html file
+                    window.location.href = 'irrigationtips.html';
+                } else {
+                    // For other pages, we just show a placeholder (since you didn't provide code for them)
+                    setCurrentPage(id);
+                }
+            };
+
+            // Placeholder page for others (Disease, Price, etc.)
+            if (currentPage !== 'home') {
+                return (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#FFF' }}>
+                        <h1>{currentPage.toUpperCase()} Page</h1>
+                        <p>You haven't provided code for this page yet.</p>
+                        <button onClick={() => setCurrentPage('home')} style={{padding:'10px', marginTop:'20px'}}>Back Home</button>
+                    </div>
+                );
+            }
+
+            // HOME PAGE RENDER
+            return (
+                <div>
+                    <style>{globalStyles}</style>
+                    <Navbar onNavigate={handleNavigation} />
+
+                    <div className="responsive-flex" style={{ display: 'flex', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+                        <div className="hero-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '4rem', zIndex: 10 }}>
+                            <h1 style={{ fontSize: '3.5rem', fontWeight: '800', color: theme.colors.bgLight, lineHeight: 1.1, marginBottom: '1rem' }}>Farmer Support <br /> <span style={{ color: theme.colors.accent }}>System</span></h1>
+                            <p style={{ fontSize: '1.2rem', color: theme.colors.bgLight, marginBottom: '2.5rem', maxWidth: '500px', opacity: 0.9 }}>Empowering farmers with irrigation guidance, disease alerts, price forecasts, and weather updates.</p>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', width: '100%' }}>
+                                <FeatureCard title="Disease Control" desc="Identify crop diseases." icon="disease" onClick={() => handleNavigation('disease')} />
+                                <FeatureCard title="Irrigation" desc="Smart watering schedules." icon="water" onClick={() => handleNavigation('irrigation')} />
+                                <FeatureCard title="Price Prediction" desc="Market trends & forecast." icon="price" onClick={() => handleNavigation('price')} />
+                            </div>
+                        </div>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}><ThreeScene /></div>
+                        </div>
+                    </div>
+
+                    <footer style={{ padding: '2rem', textAlign: 'center', color: theme.colors.textLight, position: 'relative', zIndex: 5, backgroundColor: theme.colors.bgDark }}>
+                        <p>&copy; 2025 Farmer Support System. All rights reserved.</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
